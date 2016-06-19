@@ -6,12 +6,15 @@ go:
   - tip
 sudo: false
 before_install: 'git fetch --unshallow'
-install: 'make deps'
+install:
+  - 'make deps'
+  - 'cd vendor/github.com/coreos/etcd/cmd/ && godep restore && cd -'
 script: 'make test'
 matrix:
   allow_failures:
     - go: tip
     - go: 1.4.3
+    - go: 1.6
 notifications:
   irc:
     channels:

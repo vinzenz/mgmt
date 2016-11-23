@@ -2295,3 +2295,23 @@ func (re *RE) ApplyDeltaEvents(urlsmap etcdtypes.URLsMap) (etcdtypes.URLsMap, er
 	}
 	return urlsmap, nil
 }
+
+// Path returns the affected path on this event.
+func (re RE) Path() string {
+	return re.path
+}
+
+// Response returns the WatchReponse from etcd.
+func (re RE) Response() etcd.WatchResponse {
+	return re.response
+}
+
+// Error returns an error if one happened nil otherwise.
+func (re RE) Error() error {
+	return re.err
+}
+
+// Retries returns the number of times it has been retried on error.
+func (re RE) Retries() uint {
+	return re.retries
+}

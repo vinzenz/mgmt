@@ -1378,7 +1378,7 @@ func (obj *EmbdEtcd) nominateCallback(re *RE) error {
 		// this must be idempotent in case it errors and is called again
 		// if we're retrying and we get a data format error, it's normal
 		nominated := obj.nominated
-		if nominated, err := ApplyDeltaEvents(re, nominated); err == nil {
+		if nominated, err := re.ApplyDeltaEvents(nominated); err == nil {
 			obj.nominated = nominated
 		} else if !re.retryHint || err != errApplyDeltaEventsInconsistent {
 			log.Fatal(err)
@@ -1520,7 +1520,7 @@ func (obj *EmbdEtcd) endpointCallback(re *RE) error {
 
 	// updating
 	_, exists := endpoints[seedSentinel]
-	endpoints, err := ApplyDeltaEvents(re, endpoints)
+	endpoints, err := re.ApplyDeltaEvents(endpoints)
 	if err != nil || exists {
 		// TODO: we could also lookup endpoints from the maintenance api
 		endpoints, err = EtcdEndpoints(obj)
@@ -2256,7 +2256,7 @@ func EtcdGetResources(obj *EmbdEtcd, hostnameFilter, kindFilter []string) ([]res
 //}
 
 // ApplyDeltaEvents modifies a URLsMap with the deltas from a WatchResponse
-func ApplyDeltaEvents(re *RE, urlsmap etcdtypes.URLsMap) (etcdtypes.URLsMap, error) {
+func (re *RE) ApplyDeltaEvents(urlsmap etcdtypes.URLsMap) (etcdtypes.URLsMap, error) {
 	if re == nil { // passthrough
 		return urlsmap, nil
 	}

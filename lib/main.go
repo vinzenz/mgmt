@@ -33,6 +33,7 @@ import (
 	"github.com/purpleidea/mgmt/recwatch"
 	"github.com/purpleidea/mgmt/remote"
 	"github.com/purpleidea/mgmt/resources"
+	"github.com/purpleidea/mgmt/torrent"
 	"github.com/purpleidea/mgmt/util"
 
 	etcdtypes "github.com/coreos/etcd/pkg/types"
@@ -64,12 +65,13 @@ type Main struct {
 	GAPI    gapi.GAPI // graph API interface struct
 	Remotes []string  // list of remote graph definitions to run
 
-	NoWatch          bool   // do not update graph on watched graph definition file changes
-	Noop             bool   // globally force all resources into no-op mode
-	Graphviz         string // output file for graphviz data
-	GraphvizFilter   string // graphviz filter to use
-	ConvergedTimeout int    // exit after approximately this many seconds in a converged state; -1 to disable
-	MaxRuntime       uint   // exit after a maximum of approximately this many seconds
+	TorrentAdd       []string // Torrents to add
+	NoWatch          bool     // do not update graph on watched graph definition file changes
+	Noop             bool     // globally force all resources into no-op mode
+	Graphviz         string   // output file for graphviz data
+	GraphvizFilter   string   // graphviz filter to use
+	ConvergedTimeout int      // exit after approximately this many seconds in a converged state; -1 to disable
+	MaxRuntime       uint     // exit after a maximum of approximately this many seconds
 
 	Seeds            []string // default etc client endpoint
 	ClientURLs       []string // list of URLs to listen on for client traffic
@@ -329,6 +331,19 @@ func (obj *Main) Run() error {
 		converger.SetStateFn(convergerStateFn)
 	}
 
+	log.Printf("Creating torrent service....")
+	torrentSvc, err := torrent.NewTorrentService(EmbdEtcd, prefix, hostname, obj.Flags.Debug || obj.Flags.Trace)
+	if err != nil {
+		obj.Exit(fmt.Errorf("Main: Torrent: Startup failed: %s", err.Error()))
+	}
+	log.Printf("Starting torrent service....")
+	go torrentSvc.Run()
+
+	if obj.TorrentAdd != nil && len(obj.TorrentAdd) > 0 {
+		log.Printf("Attempting to add torrents: %q", obj.TorrentAdd)
+		torrentSvc.AddMultiple(obj.TorrentAdd...)
+	}
+
 	var gapiChan chan error // stream events are nil errors
 	if obj.GAPI != nil {
 		data := gapi.Data{
@@ -526,6 +541,9 @@ func (obj *Main) Run() error {
 	reterr := <-obj.exit // wait for exit signal
 
 	log.Println("Destroy...")
+
+	log.Printf("Stopping torrent service....")
+	torrentSvc.Exit()
 
 	if obj.GAPI != nil {
 		if err := obj.GAPI.Close(); err != nil {

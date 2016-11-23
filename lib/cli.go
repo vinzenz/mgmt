@@ -82,6 +82,7 @@ func run(c *cli.Context) error {
 	}
 	obj.Remotes = c.StringSlice("remote") // FIXME: GAPI-ify somehow?
 
+	obj.TorrentAdd = c.StringSlice("add-torrent")
 	obj.NoWatch = c.Bool("no-watch")
 	obj.Noop = c.Bool("noop")
 	obj.Graphviz = c.String("graphviz")
@@ -319,6 +320,11 @@ func CLI(program, version string, flags Flags) error {
 					Name:  "pgp-identity",
 					Value: "",
 					Usage: "default identity used for generation",
+				},
+				cli.StringSliceFlag{
+					Name:  "add-torrent",
+					Value: &cli.StringSlice{},
+					Usage: "list of files/directories to add as torrents",
 				},
 			},
 		},
